@@ -10,7 +10,8 @@ import csv
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import datetime
+import datetime as dt
+from functools import reduce
 
 def openFile():
     with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
@@ -44,11 +45,14 @@ def openFileAsPanda():
     with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
     
         print("File opened!")
-    
         data = pd.read_csv(csv_file)
     
     return data
-            
+    
+# returns the factors of a number n
+def factors(n):    
+    return set(reduce(list.__add__, 
+                ([i, n//i] for i in range(1, int(n**0.5) + 1) if n % i == 0)))        
             
                 
 def main():
@@ -60,9 +64,21 @@ def main():
     volume = np.zeros(data.shape[0])
     
     #data['datetime'] = data['date'].map(lambda x: datetime.datetime.strptime(x, ))
+    data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
     data['Assets'] = data['Close'] * data['Volume']
     data['Return'] = data['Close'].diff()
-    data.plot('Unix Timestamp', 'Return')
+    
+    length_max = len(data.index)
+    fa = array(factors(length_max))
+    print(fa)
+    
+    plt.close()
+    #data.plot('Formatted Date', 'Assets')
+    
+    ####### Idea so far:
+    # Find factors of the total length of list - 121580
+    # Use this as block length to calculate Hurst exponent 
+    
     
     
     
