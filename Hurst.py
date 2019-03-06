@@ -35,25 +35,28 @@ def openFile():
         
 def openFileAsPanda():
     with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
-    
-        print("File opened!")
         data = pd.read_csv(csv_file)
+        print("Prices in USD imported.")
     
-    return data
+    with open("USACPI.csv") as csv_file:
+        inflation = pd.read_csv(csv_file)
+        print("Inflation imported.")
+        
+    return data, inflation
     
 # returns the factors of a number n
 def factors(n):    
-    return set(reduce(list.__add__, 
+    return set(reduce(list.__add__, # this part adds each factor to a list
                 ([i, n//i] for i in range(1, int(n**0.5) + 1) if n % i == 0)))        
             
                 
 def main():
     # The prices of cryptocurrencies in USD are imported
-    data = openFileAsPanda()
+    data, inflation = openFileAsPanda()
     
     #data['Close'].plot()
     print(data.shape[0])
-    
+    print(inflation.shape[0])
     
     volume = np.zeros(data.shape[0])
     
@@ -63,7 +66,7 @@ def main():
     data['Return'] = data['Close'].diff()
     
     length_max = len(data.index)
-    fa = array(factors(length_max)) # Theres an error here
+    fa = np.array(factors(length_max)) # Hope that length is not a prime number
     print(fa)
     
     plt.close()
