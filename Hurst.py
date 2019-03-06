@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
 from functools import reduce
-import tradingeconomics as te # requires pip install tradingeconomics
 
 def openFile():
     with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
@@ -51,10 +50,6 @@ def factors(n):
 def main():
     # The prices of cryptocurrencies in USD are imported
     data = openFileAsPanda()
-    # The inflation of USD is imported
-    te.login('n1800703j@e.ntu.edu.sg:PH4410-ECONOPHYSICS')
-    print(te.getHistoricalData(country='United States', indicators='Inflation Rate', initDate='2015-01-01'))
-#    plt.plot(inflation)
     
     #data['Close'].plot()
     print(data.shape[0])
@@ -68,7 +63,7 @@ def main():
     data['Return'] = data['Close'].diff()
     
     length_max = len(data.index)
-    fa = array(factors(length_max))
+    fa = array(factors(length_max)) # Theres an error here
     print(fa)
     
     plt.close()
