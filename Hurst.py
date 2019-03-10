@@ -5,6 +5,8 @@ import numpy as np
 import datetime as dt
 from functools import reduce
 
+plt.close('all')
+
 def openFile():
     with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
     
@@ -53,74 +55,82 @@ def factors2(n,a): # returns a factors from number n
     multiplier = n**(1/a)
     factors = np.zeros(a)
     for i in range(a):
-        factors[i] = np.int(np.floor(multiplier**(i+1)))
-    return factors
+        factors[i] = multiplier**(i+1)
+
+    return factors.astype(int)    # Convert to array of integers
             
                 
-def main():
-    # The prices of cryptocurrencies in USD are imported
-    data, inflation = openFileAsPanda()
-    
-    #data['Close'].plot()
-    print(data.shape[0])
-    print(inflation.shape[0])
-    
-    volume = np.zeros(data.shape[0])
-    
-    #data['datetime'] = data['date'].map(lambda x: datetime.datetime.strptime(x, ))
-    data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
-    data['Assets'] = data['Close'] * data['Volume']
-    data['Return'] = data['Close'].diff()
-    
-    length_max = len(data.index)
-    fa = np.array(factors(length_max)) # Hope that length is not a prime number
-    print(fa)
+#def main():
+# The prices of cryptocurrencies in USD are imported
+data, inflation = openFileAsPanda()
+
+#data['Close'].plot()
+print(data.shape[0])
+print(inflation.shape[0])
+
+volume = np.zeros(data.shape[0])
+
+#data['datetime'] = data['date'].map(lambda x: datetime.datetime.strptime(x, ))
+data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
+data['Assets'] = data['Close'] * data['Volume']
+data['Return'] = data['Close'].diff()
+
+length_max = len(data.index)
+#    fa = np.array(factors(length_max)) # Hope that length is not a prime number
+#    print(fa)
 #==============================================================================
 #     Instead of getting factors of the number, we could plan to get a certain
 #     number of factors for the Hurst plot and the round off to integers as
 #     showed below:
 #==============================================================================
-    fa2 = factors2(length_max,10)
-    print(fa2)
-    print('sample start')
-    for i in range(10):
-        print(np.zeros(np.int(fa2[i])))
-        
-    print('sample ends')
+fa2 = factors2(length_max,10)    # Get array with sizes of hurst exponent
+print(fa2)
+#    print('sample start')
+#    for i in range(10):
+#        print(np.zeros(np.int(fa2[i])))
+#        
+#    print('sample ends')
+#    
+#    plt.figure()
+#    data.plot('Formatted Date', 'Assets')
+
+####### Idea so far:
+# Find factors of the total length of list - 121580
+# Use this as block length to calculate Hurst exponent 
+
+X = np.array(data['Close'])
+x = np.zeros(data['Close'].shape) # For x & X to be of the same shape
+x[:-1] = np.diff(X, n=1)
+rav = []
+for n in fa2:
+    print(n)
+    r = []
+    for k in range(np.int(length_max/n)):
+        S = np.std(x[k*n:(k+1)*n])
+        R = np.max(X[k*n:(k+1)*n]) - np.min(X[k*n:(k+1)*n])
+        r.append(R/S)                                         # There's an error when R/S is calculated
+    rav.append(np.mean(r))
     
-    plt.close()
-    #data.plot('Formatted Date', 'Assets')
-    
-    ####### Idea so far:
-    # Find factors of the total length of list - 121580
-    # Use this as block length to calculate Hurst exponent 
-    
-    rav = []
-    for n in np.int(fa2):
-        r = []
-        for k in range(int(length_max/n)):
-            S = np.std(x[k*n:(k+1)*n])
-            R = max(X[k*n:(k+1)*n]) - min(X[k*n:(k+1)*n])
-            r.append(R/S)
-        rav.append(np.mean(r))
-        
-    lnN = np.log(np.int(fa2))
-    lnrav = np.log(rav)
-    
-    plnNlnrav = np.polyfit(lnN,lnrav,1)
-    lnravfit = np.polyval(plnNlnrav,lnN)
+lnN = np.log(fa2)
+lnrav = np.log(rav)
+
+plt.figure()
+plt.plot(lnN,lnrav)
+
+plnNlnrav = np.polyfit(lnN,lnrav,1)
+lnravfit = np.polyval(plnNlnrav,lnN)  # This isn't working either
 
 
-    
-    """
-    for i in range(data.shape[0]):
-        volume[i] = data['Close'][i] * data['Volume'][i]
 
-    plt.plot(volume)
-    plt.show()
-    """
-    
-main()   
+"""
+for i in range(data.shape[0]):
+    volume[i] = data['Close'][i] * data['Volume'][i]
+
+plt.plot(volume)
+plt.show()
+"""
+
+#main()   
     
     
     
