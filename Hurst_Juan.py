@@ -48,53 +48,43 @@ def openFileAsPanda():
     
 # returns the factors of a number n
 def factors(n):    
-    # this part adds each factor to a list
-    return np.array(set(reduce(list.__add__, 
-                ([i, n//i] for i in range(1, int(n**0.5) + 1) if n % i == 0))))     
+    return set(reduce(list.__add__, # this part adds each factor to a list
+                ([i, n//i] for i in range(1, int(n**0.5) + 1) if n % i == 0)))     
 
-# returns a factors from number n
-def factors_a(n,a): 
+def factors2(n,a): # returns a factors from number n
     multiplier = n**(1/a)
     factors = np.zeros(a)
     for i in range(a):
         factors[i] = multiplier**(i+1)
 
-    # Convert to array of integers
-    return factors.astype(int)    
+    return factors.astype(int)    # Convert to array of integers
             
-<<<<<<< HEAD
-###########################################                
-#### MAIN CODE FOR EXECUTING FUNCTIONS HERE
-###########################################    
-
-=======
                 
 #def main():     I HAVE MAIN OPEN TO DEBUG
->>>>>>> 3c19dd7afe974bf9856456f2556266f06ed8f3a5
 # The prices of cryptocurrencies in USD are imported
-# Inflation is also imported
 data, inflation = openFileAsPanda()
 
-# change date so it can be plotted
-# add a 'Returns' column
+#data['Close'].plot()
+print(data.shape[0])
+print(inflation.shape[0])
+
+volume = np.zeros(data.shape[0])
+
+#data['datetime'] = data['date'].map(lambda x: datetime.datetime.strptime(x, ))
 data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
-#data['Assets Traded'] = data['Close'] * data['Volume']
-data['Returns'] = data['Close'].diff()
+data['Assets'] = data['Close'] * data['Volume']
+data['Return'] = data['Close'].diff()
 
 length_max = len(data.index)
+#    fa = np.array(factors(length_max)) # Hope that length is not a prime number
+#    print(fa)
 #==============================================================================
-#     Plan to get a certain number of factors for the Hurst plot
-#     round off to integers as
+#     Instead of getting factors of the number, we could plan to get a certain
+#     number of factors for the Hurst plot and the round off to integers as
 #     showed below:
 #==============================================================================
-# Get array with sizes of sections in time series 
-facs = factors(length_max)
-#facs = factors_a(length_max,10)    
-
-
-
-
-#### Not sure what this commented out code means?
+fa2 = factors2(length_max,10)    # Get array with sizes of hurst exponent
+print(fa2)
 #    print('sample start')
 #    for i in range(10):
 #        print(np.zeros(np.int(fa2[i])))
@@ -103,23 +93,7 @@ facs = factors(length_max)
 #    
 #    plt.figure()
 #    data.plot('Formatted Date', 'Assets')
-#####
 
-
-
-# calculate returns based on data stored 
-# generally the first element in returns will be a NaN 
-# replace NaN with 0.
-rets = np.array(data['Returns'])
-where_are_NaNs = np.isnan(rets)
-rets[where_are_NaNs] = 0.
-
-<<<<<<< HEAD
-# cumulative sum of returns
-rets_cumsum = np.cumsum(rets)
-
-# list storing average of R/S for section sizes given (given as factors)
-=======
 ####### Idea so far:
 # Find factors of the total length of list - 121580       DONE in fa & fa2, we got to decide which one to use
 # Use this as block length to calculate Hurst exponent 
@@ -129,45 +103,43 @@ rets_cumsum = np.cumsum(rets)
 #==============================================================================
 # Below is the code that calculates the data used to obtain the hurst exponent
 #==============================================================================
-X = np.array(data['Close'])
+X = np.array(data['Close']) + 0.01*np.random.randn(data['Close'].shape[0])
 x = np.zeros(data['Close'].shape) # For x & X to be of the same shape
 x[:-1] = np.diff(X, n=1)
->>>>>>> 3c19dd7afe974bf9856456f2556266f06ed8f3a5
 rav = []
-
-# calculation of <R(fac)/S(fac)> for different section sizes fac
-for fac in facs:
+for n in fa2:
+    print(n)
     r = []
-    for k in range(np.int(length_max/fac)): 
-        S = np.std(rets[k*fac:(k+1)*fac])
-        R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
-        r.append(R/S)                                         
-        
-    r = np.array(r)
-    
-<<<<<<< HEAD
-    # give zero, instead of NaN, if S standard deviation is zero
-    where_are_NaNs = np.isnan(r)
-    r[where_are_NaNs] = 0.
-    
-    
+    for k in range(np.int(length_max/n)):
+        S = np.std(x[k*n:(k+1)*n])
+        R = np.max(X[k*n:(k+1)*n]) - np.min(X[k*n:(k+1)*n])
+        r.append(R/S)                                         # There's an error when R/S is calculated
     rav.append(np.mean(r))
- 
-# log both lists
-lnN = np.log(facs)
-=======
+    
 lnN = np.log(fa2)      # There's an error when obtaining the hurst exponent value
->>>>>>> 3c19dd7afe974bf9856456f2556266f06ed8f3a5
 lnrav = np.log(rav)
 
 plt.figure()
 plt.plot(lnN,lnrav)
 
-# fit lnN as x and lnrav as y as a linear fit
-# in accordance with equation given in 'Statstical Properties of Financial Time Series'
 plnNlnrav = np.polyfit(lnN,lnrav,1)
-lnravfit = np.polyval(plnNlnrav,lnN)  
+lnravfit = np.polyval(plnNlnrav,lnN)  # This isn't working either
 
-# print values of coefficients of linear fit
-print(plnNlnrav)
+
+
+"""
+for i in range(data.shape[0]):
+    volume[i] = data['Close'][i] * data['Volume'][i]
+
+plt.plot(volume)
+plt.show()
+"""
+
+#main()   
+    
+    
+    
+    
+    
+    
     
