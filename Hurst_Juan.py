@@ -103,7 +103,7 @@ print(fa2)
 #==============================================================================
 # Below is the code that calculates the data used to obtain the hurst exponent
 #==============================================================================
-X = np.array(data['Close']) + 0.01*np.random.randn(data['Close'].shape[0])
+X = np.array(data['Close']) + 0.0000000000000001*np.random.randn(data['Close'].shape[0])
 x = np.zeros(data['Close'].shape) # For x & X to be of the same shape
 x[:-1] = np.diff(X, n=1)
 rav = []
@@ -123,9 +123,7 @@ plt.figure()
 plt.plot(lnN,lnrav)
 
 plnNlnrav = np.polyfit(lnN,lnrav,1)
-lnravfit = np.polyval(plnNlnrav,lnN)  # This isn't working either
-
-
+lnravfit = np.polyval(plnNlnrav,lnN)  
 
 """
 for i in range(data.shape[0]):
