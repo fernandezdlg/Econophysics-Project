@@ -130,33 +130,21 @@ for fac in facs:
         S = np.std(rets[k*fac:(k+1)*fac])
         R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
         
-        
-        #print(R/S)
-        
-        # two solutions to issue with regard to S being zero
-        # take inf values to be nan, therefore then ignored
-        # or to use a different way to calculate standard deviation. X/√N
-        
-        if len(set(rets[k*fac:(k+1)*fac])) == 1 and rets[k*fac] != 0.:
-            print('Oh')
-            S = abs(rets[k*fac] / fac**0.5 )
-            print(S)
+        if R/S == float('inf') or R/S > 100000:
+            S = abs(rets[k*fac]) / (fac**0.5)
+                        
             
-        if S < 0.001 and S > 0.:
-            print(rets[k*fac:(k+1)*fac])
-            print(rets_cumsum[k*fac:(k+1)*fac])
-        
-        ##### OR
-        #if (len(set(rets[k*fac:(k+1)*fac])) == 1) and (rets[k*fac] != 0.):
-        #    S = float('nan')
-        
-        """
-        if R/S == float('inf'):
+            print('#####')
+            print(R)
+            print(S)
+            print(R/S)
             print(fac)
             print(k)
             print(rets[k*fac:(k+1)*fac])
-            print(rets_cumsum[k*fac:(k+1)*fac])
-        """
+            print(abs(rets[k*fac]/ (fac**0.5)))
+            print(np.max(rets_cumsum[k*fac:(k+1)*fac]))
+            print(np.min(rets_cumsum[k*fac:(k+1)*fac]))
+            print('#####')
         
         r.append(R/S)
     
@@ -165,7 +153,7 @@ for fac in facs:
     # idea is to find out if an extremely small S value is causing R/S to be large.
     # find out what values are causing it
         
-        
+    
         
         
     r = np.array(r)
@@ -176,6 +164,8 @@ for fac in facs:
     
     
     rav.append(np.mean(r))
+    
+
  
 # log both lists
 lnN = np.log(facs)
