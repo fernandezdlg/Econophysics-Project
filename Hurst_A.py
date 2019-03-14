@@ -119,7 +119,7 @@ for dataIndex, dataRow in data.iterrows():
 
 
 
-"""
+
 # add a 'Returns' column
 data['Returns'] = data['Close'].diff()
 
@@ -137,8 +137,14 @@ rets = np.array(data['Returns'])
 where_are_NaNs = np.isnan(rets)
 rets[where_are_NaNs] = 0.
 
-rets_dates = np.array(data['Formatted Dates'])
-"""
+rets_dates = np.array(data['Formatted Date'])
+rets_timestamp = np.array(data['Unix Timestamp'])
+
+print(rets_timestamp)
+for timestamp in rets_timestamp:
+    dt.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m'))
+
+
 
 
 
@@ -194,6 +200,4 @@ print(plnNlnrav)
 
 # plot lnrav and lnravfit 
 hurstFitPlot(lnN, lnrav, lnravfit)
-
-"""
-    
+ """   
