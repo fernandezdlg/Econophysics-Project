@@ -85,24 +85,42 @@ inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in infl
 #data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
 
 
-print(inflat['TIME'])
-print(data['Formatted Date'])
-
-#######
-#for index, row in data.iterrows:
-#    monthAndYear = row['Formatted Date']
-
-
-
+#print(inflat['Value'])
+#print(data['Formatted Date'][10])
 
 
 
 
 
 """
+# code below adds inflation to 'data' DataFrame but it is extremely slow
+data['Inflation'] = 0.0
+for dataIndex, dataRow in data.iterrows():
+    dataMonth = dataRow['Formatted Date'].month
+    
+    print(dataIndex)
+    
+    
+    
+    for inflatIndex, inflatRow in inflat.iterrows():
+        inflatYear, inflatMonth = inflatRow['Formatted Date'].year, inflatRow['Formatted Date'].month
+        
+        print(inflatRow['Value'])
+        
+        if inflatYear == year and inflatMonth == dataMonth:
+            inflatValue = inflatRow['Value']
+            data['Inflation'][dataIndex] = inflatValue
+"""        
+    
+   
+    
+    
 
+
+
+
+"""
 # add a 'Returns' column
-#data['Assets Traded'] = data['Close'] * data['Volume']
 data['Returns'] = data['Close'].diff()
 
 
@@ -119,6 +137,13 @@ rets = np.array(data['Returns'])
 where_are_NaNs = np.isnan(rets)
 rets[where_are_NaNs] = 0.
 
+rets_dates = np.array(data['Formatted Dates'])
+"""
+
+
+
+
+"""
 # cumulative sum of returns
 rets_cumsum = np.cumsum(rets)
 
