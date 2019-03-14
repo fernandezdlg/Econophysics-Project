@@ -5,10 +5,8 @@ import numpy as np
 import datetime as dt
 from functools import reduce
 
-plt.close('all')
-
-def openFile():
-    with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
+def openFile(year):
+    with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
     
         print("File opened!")
     
@@ -31,12 +29,10 @@ def openFile():
                 print(row)
                 line_count += 1
             
-            
-                
         print("Done!")
         
-def openFileAsPanda():
-    with open("gemini_BTCUSD_2018_1min.csv") as csv_file:
+def openFileAsPanda(year):
+    with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
         data = pd.read_csv(csv_file)
         print("Prices in USD imported.")
     
@@ -60,7 +56,17 @@ def factors_a(n,a):
         factors[i] = multiplier**(i+1)
 
     # Convert to array of integers
-    return factors.astype(int)    
+    return factors.astype(int)
+
+def hurstFitPlot(lnN, lnrav, lnravfit):
+    plt.close('all')
+    plt.plot(lnN, lnravfit, 'r')
+    plt.plot(lnN, lnrav, 'o')
+    plt.xlabel('ln(facs)')
+    plt.ylabel('ln(R/S)')
+    plt.show()
+
+    
             
 ###########################################                
 #### MAIN CODE FOR EXECUTING FUNCTIONS HERE
@@ -68,42 +74,42 @@ def factors_a(n,a):
 
 # The prices of cryptocurrencies in USD are imported
 # Inflation is also imported
-data, inflation = openFileAsPanda()
+year = 2015
+data, inflat = openFileAsPanda(year)
 
 # change date so it can be plotted
 # date change for 2015 file
-#data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
+data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
+inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
 # date change for 2018 file
 #data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
+
+
+print(inflat['TIME'])
+print(data['Formatted Date'])
+
+#######
+#for index, row in data.iterrows:
+#    monthAndYear = row['Formatted Date']
+
+
+
+
+
+
+
+
+"""
 
 # add a 'Returns' column
 #data['Assets Traded'] = data['Close'] * data['Volume']
 data['Returns'] = data['Close'].diff()
 
-length_max = len(data.index)
-#==============================================================================
-#     Plan to get a certain number of factors for the Hurst plot
-#     round off to integers as
-#     showed below:
-#==============================================================================
+
 # Get array with sizes of sections in time series 
+length_max = len(data.index)
 #facs = factors(length_max)
 facs = factors_a(length_max,10)    
-
-
-
-
-#### Not sure what this commented out code means?
-#    print('sample start')
-#    for i in range(10):
-#        print(np.zeros(np.int(fa2[i])))
-#        
-#    print('sample ends')
-#    
-#    plt.figure()
-#    data.plot('Formatted Date', 'Assets')
-#####
-
 
 
 # calculate returns based on data stored 
@@ -130,50 +136,28 @@ for fac in facs:
         S = np.std(rets[k*fac:(k+1)*fac])
         R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
         
-        if R/S == float('inf') or R/S > 100000:
-            S = abs(rets[k*fac]) / (fac**0.5)
+        # occasionally S will be stored as a very small number ~e-13 instead of zero
+        # occurs due the rets[k*fac:(k+1)*fac] elements being equal
+        # this leads to errors where R/S will be 'inf' or extremely large
+        # This if statement counters this by using a new equation to calculate standard deviation
+        if R/S == float('inf') or R/S > 1000000:
+            S = abs(rets[k*fac])/(fac**0.5)
                         
-            
-            print('#####')
-            print(R)
-            print(S)
-            print(R/S)
-            print(fac)
-            print(k)
-            print(rets[k*fac:(k+1)*fac])
-            print(abs(rets[k*fac]/ (fac**0.5)))
-            print(np.max(rets_cumsum[k*fac:(k+1)*fac]))
-            print(np.min(rets_cumsum[k*fac:(k+1)*fac]))
-            print('#####')
-        
-        r.append(R/S)
-    
-    ### Find out what is causing massive spike in rav for fac == 3
-    # firstly find minimum value in S_3 (standard deviations from fac==3) list, which is not zero
-    # idea is to find out if an extremely small S value is causing R/S to be large.
-    # find out what values are causing it
-        
-    
-        
+           
+        r.append(R/S)    
         
     r = np.array(r)
     
     # give zero, instead of NaN, if S standard deviation is zero
     where_are_NaNs = np.isnan(r)
     r[where_are_NaNs] = 0.
-    
-    
+      
     rav.append(np.mean(r))
     
 
- 
 # log both lists
 lnN = np.log(facs)
 lnrav = np.log(rav)
-
-
-plt.figure()
-plt.plot(lnN,lnrav)
 
 # fit lnN as x and lnrav as y as a linear fit
 # in accordance with equation given in 'Statstical Properties of Financial Time Series'
@@ -182,4 +166,9 @@ lnravfit = np.polyval(plnNlnrav,lnN)
 
 # print values of coefficients of linear fit
 print(plnNlnrav)
+
+# plot lnrav and lnravfit 
+hurstFitPlot(lnN, lnrav, lnravfit)
+
+"""
     
