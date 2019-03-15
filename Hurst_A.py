@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
 from functools import reduce
+import matplotlib
 
 def openFile(year):
     with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
@@ -58,12 +59,14 @@ def factors_a(n,a):
     # Convert to array of integers
     return factors.astype(int)
 
-def hurstFitPlot(lnN, lnrav, lnravfit):
+def hurstFitPlot(lnN, lnrav, lnravfit, year):
     plt.close('all')
+    matplotlib.rcParams.update({'font.size': 22})
     plt.plot(lnN, lnravfit, 'r')
     plt.plot(lnN, lnrav, 'o')
     plt.xlabel('ln(facs)')
     plt.ylabel('ln(R/S)')
+    plt.title('Bitcoin '+str(year))
     plt.show()
 
     
@@ -74,22 +77,22 @@ def hurstFitPlot(lnN, lnrav, lnravfit):
 
 # The prices of cryptocurrencies in USD are imported
 # Inflation is also imported
-year = 2015
+year = 2018
 data, inflat = openFileAsPanda(year)
 
 # change date so it can be plotted
-# date change for 2015 file
-data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
 inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
-# date change for 2018 file
-#data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
+
+
+
+if year == 2015:
+    data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
+elif year > 2015:
+    data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
 
 
 #print(inflat['Value'])
 #print(data['Formatted Date'][10])
-
-
-
 
 
 """
@@ -111,14 +114,6 @@ for dataIndex, dataRow in data.iterrows():
             inflatValue = inflatRow['Value']
             data['Inflation'][dataIndex] = inflatValue
 """        
-    
-   
-    
-    
-
-
-
-
 
 # add a 'Returns' column
 data['Returns'] = data['Close'].diff()
@@ -137,19 +132,17 @@ rets = np.array(data['Returns'])
 where_are_NaNs = np.isnan(rets)
 rets[where_are_NaNs] = 0.
 
+
+"""
 rets_dates = np.array(data['Formatted Date'])
 rets_timestamp = np.array(data['Unix Timestamp'])
 
 print(rets_timestamp)
 for timestamp in rets_timestamp:
     dt.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m'))
-
-
-
-
-
-
 """
+
+
 # cumulative sum of returns
 rets_cumsum = np.cumsum(rets)
 
@@ -174,7 +167,6 @@ for fac in facs:
         if R/S == float('inf') or R/S > 1000000:
             S = abs(rets[k*fac])/(fac**0.5)
                         
-           
         r.append(R/S)    
         
     r = np.array(r)
@@ -199,5 +191,4 @@ lnravfit = np.polyval(plnNlnrav,lnN)
 print(plnNlnrav)
 
 # plot lnrav and lnravfit 
-hurstFitPlot(lnN, lnrav, lnravfit)
- """   
+hurstFitPlot(lnN, lnrav, lnravfit, year) 
