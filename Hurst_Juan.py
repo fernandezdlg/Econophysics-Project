@@ -4,11 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
 from functools import reduce
+import matplotlib
 
-plt.close('all')
-
-def openFile():
-    with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
+def openFile(year):
+    with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
     
         print("File opened!")
     
@@ -31,12 +30,10 @@ def openFile():
                 print(row)
                 line_count += 1
             
-            
-                
         print("Done!")
         
-def openFileAsPanda():
-    with open("gemini_BTCUSD_2015_1min.csv") as csv_file:
+def openFileAsPanda(year):
+    with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
         data = pd.read_csv(csv_file)
         print("Prices in USD imported.")
     
@@ -48,96 +45,165 @@ def openFileAsPanda():
     
 # returns the factors of a number n
 def factors(n):    
-    return set(reduce(list.__add__, # this part adds each factor to a list
+    # this part adds each factor to a list
+    return set(reduce(list.__add__, 
                 ([i, n//i] for i in range(1, int(n**0.5) + 1) if n % i == 0)))     
 
-def factors2(n,a): # returns a factors from number n
+# returns a factors from number n
+def factors_a(n,a): 
     multiplier = n**(1/a)
     factors = np.zeros(a)
     for i in range(a):
         factors[i] = multiplier**(i+1)
 
-    return factors.astype(int)    # Convert to array of integers
+    # Convert to array of integers
+    return factors.astype(int)
+
+def hurstFitPlot(lnN, lnrav, lnravfit, year):
+    plt.close('all')
+    matplotlib.rcParams.update({'font.size': 22})
+    plt.plot(lnN, lnravfit, 'r')
+    plt.plot(lnN, lnrav, 'o')
+    plt.xlabel('ln(facs)')
+    plt.ylabel('ln(R/S)')
+    plt.title('Bitcoin '+str(year))
+    plt.show()
+
+    
             
-                
-#def main():     I HAVE MAIN OPEN TO DEBUG
+###########################################                
+#### MAIN CODE FOR EXECUTING FUNCTIONS HERE
+###########################################    
+
 # The prices of cryptocurrencies in USD are imported
-data, inflation = openFileAsPanda()
+# Inflation is also imported
+year = 2018
+data, inflat = openFileAsPanda(year)
 
-#data['Close'].plot()
-print(data.shape[0])
-print(inflation.shape[0])
+# change date so it can be plotted
+inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
 
-volume = np.zeros(data.shape[0])
 
-#data['datetime'] = data['date'].map(lambda x: datetime.datetime.strptime(x, ))
-data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
-data['Assets'] = data['Close'] * data['Volume']
-data['Return'] = data['Close'].diff()
 
+if year == 2015:
+    data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
+elif year > 2015:
+    data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
+
+
+#print(inflat['Value'])
+#print(data['Formatted Date'][10])
+
+
+"""
+# code below adds inflation to 'data' DataFrame but it is extremely slow
+data['Inflation'] = 0.0
+for dataIndex, dataRow in data.iterrows():
+    dataMonth = dataRow['Formatted Date'].month
+    
+    print(dataIndex)
+    
+    
+    
+    for inflatIndex, inflatRow in inflat.iterrows():
+        inflatYear, inflatMonth = inflatRow['Formatted Date'].year, inflatRow['Formatted Date'].month
+        
+        print(inflatRow['Value'])
+        
+        if inflatYear == year and inflatMonth == dataMonth:
+            inflatValue = inflatRow['Value']
+            data['Inflation'][dataIndex] = inflatValue
+"""        
+
+
+# This code aims to add inflation in a more efficient way
+# Define more natural inflation
+nat_inflat = 1+inflat.Value/100
+# Change it to a cummulative one
+for i in range(1,inflat.Value.size):
+    nat_inflat[i] = nat_inflat[i]*nat_inflat[i-1]
+
+
+# Extract Month and Year from inflation
+inflat['Formatted Date'] = pd.to_datetime(inflat['Formatted Date'])
+inflat['year'], inflat['month'] = inflat['Formatted Date'].dt.year, inflat['Formatted Date'].dt.month
+inflat
+
+
+# add a 'Returns' column
+data['Returns'] = data['Close'].diff()
+
+
+# Get array with sizes of sections in time series 
 length_max = len(data.index)
-#    fa = np.array(factors(length_max)) # Hope that length is not a prime number
-#    print(fa)
-#==============================================================================
-#     Instead of getting factors of the number, we could plan to get a certain
-#     number of factors for the Hurst plot and the round off to integers as
-#     showed below:
-#==============================================================================
-fa2 = factors2(length_max,10)    # Get array with sizes of hurst exponent
-print(fa2)
-#    print('sample start')
-#    for i in range(10):
-#        print(np.zeros(np.int(fa2[i])))
-#        
-#    print('sample ends')
-#    
-#    plt.figure()
-#    data.plot('Formatted Date', 'Assets')
-
-####### Idea so far:
-# Find factors of the total length of list - 121580       DONE in fa & fa2, we got to decide which one to use
-# Use this as block length to calculate Hurst exponent 
+#facs = factors(length_max)
+facs = factors_a(length_max,10)    
 
 
+# calculate returns based on data stored 
+# generally the first element in returns will be a NaN 
+# replace NaN with 0.
+rets = np.array(data['Returns'])
+where_are_NaNs = np.isnan(rets)
+rets[where_are_NaNs] = 0.
 
-#==============================================================================
-# Below is the code that calculates the data used to obtain the hurst exponent
-#==============================================================================
-X = np.array(data['Close']) + 0.0000000000000001*np.random.randn(data['Close'].shape[0])
-x = np.zeros(data['Close'].shape) # For x & X to be of the same shape
-x[:-1] = np.diff(X, n=1)
+
+"""
+rets_dates = np.array(data['Formatted Date'])
+rets_timestamp = np.array(data['Unix Timestamp'])
+
+print(rets_timestamp)
+for timestamp in rets_timestamp:
+    dt.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m'))
+"""
+
+
+# cumulative sum of returns
+rets_cumsum = np.cumsum(rets)
+
+# list storing average of R/S for section sizes given (given as factors)
 rav = []
-for n in fa2:
-    print(n)
+
+# calculation of <R(fac)/S(fac)> for different section sizes fac
+for fac in facs:
     r = []
-    for k in range(np.int(length_max/n)):
-        S = np.std(x[k*n:(k+1)*n])
-        R = np.max(X[k*n:(k+1)*n]) - np.min(X[k*n:(k+1)*n])
-        r.append(R/S)                                         # There's an error when R/S is calculated
+    
+    S_3 = []
+    
+    
+    for k in range(np.int(length_max/fac)): 
+        S = np.std(rets[k*fac:(k+1)*fac])
+        R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
+        
+        # occasionally S will be stored as a very small number ~e-13 instead of zero
+        # occurs due the rets[k*fac:(k+1)*fac] elements being equal
+        # this leads to errors where R/S will be 'inf' or extremely large
+        # This if statement counters this by using a new equation to calculate standard deviation
+        if R/S == float('inf') or R/S > 1000000:
+            S = abs(rets[k*fac])/(fac**0.5)
+                        
+        r.append(R/S)    
+        
+    r = np.array(r)
+    
+    # give zero, instead of NaN, if S standard deviation is zero
+    where_are_NaNs = np.isnan(r)
+    r[where_are_NaNs] = 0.
+      
     rav.append(np.mean(r))
     
-lnN = np.log(fa2)      # There's an error when obtaining the hurst exponent value
+
+# log both lists
+lnN = np.log(facs)
 lnrav = np.log(rav)
 
-plt.figure()
-plt.plot(lnN,lnrav)
-
+# fit lnN as x and lnrav as y as a linear fit
+# in accordance with equation given in 'Statstical Properties of Financial Time Series'
 plnNlnrav = np.polyfit(lnN,lnrav,1)
 lnravfit = np.polyval(plnNlnrav,lnN)  
 
-"""
-for i in range(data.shape[0]):
-    volume[i] = data['Close'][i] * data['Volume'][i]
+# print values of coefficients of linear fit
+print(plnNlnrav)
 
-plt.plot(volume)
-plt.show()
-"""
-
-#main()   
-    
-    
-    
-    
-    
-    
-    
+# plot lnrav and lnravfit 
+hurstFitPlot(lnN, lnrav, lnravfit, year) 
