@@ -127,7 +127,13 @@ for i in range(1,inflat.Value.size):
 # Extract Month and Year from inflation
 inflat['Formatted Date'] = pd.to_datetime(inflat['Formatted Date'])
 inflat['year'], inflat['month'] = inflat['Formatted Date'].dt.year, inflat['Formatted Date'].dt.month
-inflat
+
+
+
+month_loc = where(inflat.year == year)
+for i in range(1,12):
+    linear_inflat = linspace(nat_inflat[month_loc[i]-1],nat_inflat[month_loc[i]],)
+linear_inflat = linspace(nat_inflat[month_loc[0]],nat_inflat)
 
 
 # add a 'Returns' column
