@@ -114,16 +114,9 @@ for dataIndex, dataRow in data.iterrows():
             inflatValue = inflatRow['Value']
             data['Inflation'][dataIndex] = inflatValue
 """        
-''' I THINK IS BETTER TO JUST MAKE SURE DATA ONLY CONTAINS ONE YEAR BECAUSE THIS IS VERY VERY SLOW
-# ATTEMPT TO GENERALIZE THE DATA THAT CAN BE HANDLED
-# Get Range for Months and Years of interest
-YYMM = np.array([[min(data['Formatted Date'].dt.year),max(data['Formatted Date'].dt.year)],[12,1]])
 
-for i in range(data.shape[0]):
-    if data['Formatted Date'].dt.year[i] == YYMM[0,0]:
-        if data['Formatted Date'].dt.month[i] < YYMM[1,0]:
-            YYMM[1,0] = data['Formatted Date'].dt.month[i]
-'''    
+# Get Range for Months and Years of interest
+YYMM = np.array([[data['Formatted Date'].dt.year[0],data['Formatted Date'].dt.year[data.shape[0]-1]],[data['Formatted Date'].dt.month[0],data['Formatted Date'].dt.month[data.shape[0]-1]]])
 
 
 # This code aims to add inflation in a more efficient way
@@ -138,11 +131,22 @@ for i in range(1,inflat.Value.size):
 inflat['Formatted Date'] = pd.to_datetime(inflat['Formatted Date'])
 inflat['year'], inflat['month'] = inflat['Formatted Date'].dt.year, inflat['Formatted Date'].dt.month
 
-month_loc = np.where(inflat.year == year)   # Obtain location of months of interest
-month_loc = month_loc[0]
+year_loc_min = np.where(inflat.year == YYMM[0,1])[0]
+year_loc_max = np.where(inflat.year == YYMM[0,0])[0]
 
-#month_inflat = nat_inflat[month_loc[0]]     # Array with cummulative inflation
+month_loc_min = year_loc_min[np.where(inflat.month[year_loc_min] == YYMM[1,1])[0]]
+month_loc_max = year_loc_max[np.where(inflat.month[year_loc_max] == YYMM[1,0])[0]]
 
+if (month_loc_min.size == 0) or (month_loc_min.size[0] == 0):
+    print('Not enough information about inflation available')
+    month_loc_min = np.array([1])
+if (month_loc_max.size == 0):
+    month_loc_max = np.array([len(inflat.month)-1])
+
+month_loc = np.arange(month_loc_min[0],month_loc_max[0]+1)
+
+
+''' Not longer necessary
 # Create linearizations for cummulative interest
 # Find sizes for each month, THIS WORKS BUT WE SHOULD MAKE SURE WE ONLY TAKE DATA FROM EACH YEAR INSTEAD OF TAKING DATA FROM VARIOUS YEARS
 month_sizes = np.array([sum(np.where(data['Formatted Date'].dt.month == 1, 1, 0)),
@@ -157,10 +161,16 @@ month_sizes = np.array([sum(np.where(data['Formatted Date'].dt.month == 1, 1, 0)
                         sum(np.where(data['Formatted Date'].dt.month == 10, 1, 0)),
                         sum(np.where(data['Formatted Date'].dt.month == 11, 1, 0)),
                         sum(np.where(data['Formatted Date'].dt.month == 12, 1, 0))])
+''' 
     
+# Instead of for loop and month sizes finder, it assumes each month is more or less the same size:
+linear_inflat = np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(nat_inflat[np.append(month_loc[0]-1,month_loc)])),nat_inflat[np.append(month_loc[0]-1,month_loc)])
+
+'''    
 linear_inflat = np.array([])
 for i in range(12):
     linear_inflat = np.append(linear_inflat, np.linspace(nat_inflat[month_loc[i]-1],nat_inflat[month_loc[i]],month_sizes[i]))
+'''
 
 linear_inflat = linear_inflat[::-1] # Reverse order to match prices ordering
 
