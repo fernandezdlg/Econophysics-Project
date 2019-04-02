@@ -118,7 +118,7 @@ for dataIndex, dataRow in data.iterrows():
 
 # This code aims to add inflation in a more efficient way
 # Define more natural inflation
-nat_inflat = 1+inflat.Value/100
+nat_inflat = (1 + inflat.Value/100)**(1/12)
 # Change it to a cummulative one
 for i in range(1,inflat.Value.size):
     nat_inflat[i] = nat_inflat[i]*nat_inflat[i-1]
@@ -128,13 +128,13 @@ for i in range(1,inflat.Value.size):
 inflat['Formatted Date'] = pd.to_datetime(inflat['Formatted Date'])
 inflat['year'], inflat['month'] = inflat['Formatted Date'].dt.year, inflat['Formatted Date'].dt.month
 
-
-
-month_loc = where(inflat.year == year)
-for i in range(1,12):
-    linear_inflat = linspace(nat_inflat[month_loc[i]-1],nat_inflat[month_loc[i]],)
-linear_inflat = linspace(nat_inflat[month_loc[0]],nat_inflat)
-
+#
+#
+#month_loc = np.where(inflat.year == year)
+#for i in range(1,12):
+#    linear_inflat = np.linspace(nat_inflat[month_loc[i]-1],nat_inflat[month_loc[i]],)
+#linear_inflat = np.linspace(nat_inflat[month_loc[0]],nat_inflat)
+#
 
 # add a 'Returns' column
 data['Returns'] = data['Close'].diff()
