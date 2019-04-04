@@ -6,7 +6,7 @@ import datetime as dt
 from functools import reduce
 import matplotlib
 #pip install arch
-import arch
+#import arch
 
 
 def openFile(year):
@@ -98,26 +98,6 @@ elif year > 2015:
 #print(data['Formatted Date'][10])
 
 
-"""
-# code below adds inflation to 'data' DataFrame but it is extremely slow
-data['Inflation'] = 0.0
-for dataIndex, dataRow in data.iterrows():
-    dataMonth = dataRow['Formatted Date'].month
-    
-    print(dataIndex)
-    
-    
-    
-    for inflatIndex, inflatRow in inflat.iterrows():
-        inflatYear, inflatMonth = inflatRow['Formatted Date'].year, inflatRow['Formatted Date'].month
-        
-        print(inflatRow['Value'])
-        
-        if inflatYear == year and inflatMonth == dataMonth:
-            inflatValue = inflatRow['Value']
-            data['Inflation'][dataIndex] = inflatValue
-"""        
-
 # Get Range for Months and Years of interest
 YYMM = np.array([[data['Formatted Date'].dt.year[0],data['Formatted Date'].dt.year[data.shape[0]-1]],[data['Formatted Date'].dt.month[0],data['Formatted Date'].dt.month[data.shape[0]-1]]])
 
@@ -148,32 +128,10 @@ if (month_loc_max.size == 0):
 
 month_loc = np.arange(month_loc_min[0],month_loc_max[0]+1)
 
-
-''' Not longer necessary
-# Create linearizations for cummulative interest
-# Find sizes for each month, THIS WORKS BUT WE SHOULD MAKE SURE WE ONLY TAKE DATA FROM EACH YEAR INSTEAD OF TAKING DATA FROM VARIOUS YEARS
-month_sizes = np.array([sum(np.where(data['Formatted Date'].dt.month == 1, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 2, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 3, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 4, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 5, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 6, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 7, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 8, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 9, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 10, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 11, 1, 0)),
-                        sum(np.where(data['Formatted Date'].dt.month == 12, 1, 0))])
-''' 
     
 # Instead of for loop and month sizes finder, it assumes each month is more or less the same size:
 linear_inflat = np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(nat_inflat[np.append(month_loc[0]-1,month_loc)])),nat_inflat[np.append(month_loc[0]-1,month_loc)])
 
-'''    
-linear_inflat = np.array([])
-for i in range(12):
-    linear_inflat = np.append(linear_inflat, np.linspace(nat_inflat[month_loc[i]-1],nat_inflat[month_loc[i]],month_sizes[i]))
-'''
 
 linear_inflat = linear_inflat[::-1] # Reverse order to match prices ordering
 
@@ -268,11 +226,11 @@ data['variance'] = data['hvol21']**2
 data = data.dropna() # Remove rows with blank cells.
 #data.head()
 
-am = arch.arch_model(data['pct_change'] * 100)
-res = am.fit(iter=5)
-res.params
-
-
+#am = arch.arch_model(data['pct_change'] * 100)
+#res = am.fit(iter=5)
+#res.params
+#
+#
 
 
 
