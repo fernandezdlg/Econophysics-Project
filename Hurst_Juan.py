@@ -5,6 +5,9 @@ import numpy as np
 import datetime as dt
 from functools import reduce
 import matplotlib
+#pip install arch
+import arch
+
 
 def openFile(year):
     with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
@@ -137,7 +140,7 @@ year_loc_max = np.where(inflat.year == YYMM[0,0])[0]
 month_loc_min = year_loc_min[np.where(inflat.month[year_loc_min] == YYMM[1,1])[0]]
 month_loc_max = year_loc_max[np.where(inflat.month[year_loc_max] == YYMM[1,0])[0]]
 
-if (month_loc_min.size == 0) or (month_loc_min.size[0] == 0):
+if (month_loc_min.size == 0) or (month_loc_min[0] == 0):
     print('Not enough information about inflation available')
     month_loc_min = np.array([1])
 if (month_loc_max.size == 0):
@@ -253,3 +256,23 @@ print(plnNlnrav)
 
 # plot lnrav and lnravfit 
 hurstFitPlot(lnN, lnrav, lnravfit, year) 
+
+#==============================================================================
+# GARCH FITTING
+#==============================================================================
+
+data['pct_change'] = data['Close'].pct_change().dropna()
+data['stdev21'] = data['pct_change'].rolling(21).std() #rolling window stdev
+data['hvol21'] = data['stdev21']*((252*24*60)**0.5) # Annualized volatility
+data['variance'] = data['hvol21']**2
+data = data.dropna() # Remove rows with blank cells.
+#data.head()
+
+am = arch.arch_model(data['pct_change'] * 100)
+res = am.fit(iter=5)
+res.params
+
+
+
+
+
