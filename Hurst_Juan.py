@@ -6,7 +6,7 @@ import datetime as dt
 from functools import reduce
 import matplotlib
 #pip install arch
-#import arch
+import arch
 
 
 def openFile(year):
@@ -221,16 +221,21 @@ hurstFitPlot(lnN, lnrav, lnravfit, year)
 
 data['pct_change'] = data['Close'].pct_change().dropna()
 data['stdev21'] = data['pct_change'].rolling(21).std() #rolling window stdev
-data['hvol21'] = data['stdev21']*((252*24*60)**0.5) # Annualized volatility
+data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
 data['variance'] = data['hvol21']**2
 data = data.dropna() # Remove rows with blank cells.
 #data.head()
 
-#am = arch.arch_model(data['pct_change'] * 100)
-#res = am.fit(iter=5)
-#res.params
-#
-#
+data['Returns'][79360] = 0. # Remove wierd value
+am = arch.arch_model(data['Returns'] * 100)
+#res = am.fit(update_freq=5)
+res = am.fit()
+res.params
+
+#==============================================================================
+# I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
+#==============================================================================
+
 
 
 
