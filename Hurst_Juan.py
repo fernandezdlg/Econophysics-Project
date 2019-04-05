@@ -35,10 +35,27 @@ def openFile(year):
             
         print("Done!")
         
-def openFileAsPanda(year):
-    with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
-        data = pd.read_csv(csv_file)
-        print("Prices in USD imported.")
+        
+#==============================================================================
+# Import all data for Bitcoin    
+#==============================================================================
+
+def openFileAsPanda():
+    dfs = []
+    for k in range(4):
+        with open("gemini_BTCUSD_"+str(2018-k)+"_1min.csv") as csv_file:
+            dfs.append(pd.read_csv(csv_file))
+            
+            # To create consistency betweeen date formats
+            if k == 3:
+                dfs[k]['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in dfs[k]['Date']]
+            else:
+                dfs[k]['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in dfs[k]['Date']]
+            
+            print(str(2018-k) + " BTC prices in USD imported.")
+    
+    # Concatenate    
+    data = pd.concat(dfs, ignore_index=True)
     
     with open("USACPI.csv") as csv_file:
         inflation = pd.read_csv(csv_file)
@@ -72,26 +89,19 @@ def hurstFitPlot(lnN, lnrav, lnravfit, year):
     plt.title('Bitcoin '+str(year))
     plt.show()
 
-    
-            
+         
 ###########################################                
 #### MAIN CODE FOR EXECUTING FUNCTIONS HERE
 ###########################################    
 
 # The prices of cryptocurrencies in USD are imported
 # Inflation is also imported
-year = 2018
-data, inflat = openFileAsPanda(year)
+data, inflat = openFileAsPanda()
 
 # change date so it can be plotted
 inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
 
 
-
-if year == 2015:
-    data['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in data['Date']]
-elif year > 2015:
-    data['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in data['Date']]
 
 
 #print(inflat['Value'])
@@ -235,7 +245,6 @@ res.params
 #==============================================================================
 # I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
 #==============================================================================
-
 
 
 
