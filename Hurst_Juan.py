@@ -8,6 +8,27 @@ import matplotlib
 #pip install arch
 import arch
 
+#==============================================================================
+# Fancy plotting
+#==============================================================================
+import matplotlib.pylab as pylab
+# To plot with Serif font
+import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
+# Plotting parameters
+params = {'legend.fontsize':'small',
+          'figure.figsize': (12, 6),
+          'axes.labelsize': 'x-large',
+          'axes.titlesize': 'x-large',
+          'xtick.labelsize':'medium',
+          'ytick.labelsize':'medium'}
+pylab.rcParams.update(params)
+
+plt.close('all')
+
+
 
 def openFile(year):
     with open("gemini_BTCUSD_"+str(year)+"_1min.csv") as csv_file:
@@ -79,14 +100,14 @@ def factors_a(n,a):
     # Convert to array of integers
     return factors.astype(int)
 
-def hurstFitPlot(lnN, lnrav, lnravfit, year):
+def hurstFitPlot(lnN, lnrav, lnravfit):
     plt.close('all')
     matplotlib.rcParams.update({'font.size': 22})
     plt.plot(lnN, lnravfit, 'r')
     plt.plot(lnN, lnrav, 'o')
-    plt.xlabel('ln(facs)')
-    plt.ylabel('ln(R/S)')
-    plt.title('Bitcoin '+str(year))
+    plt.xlabel(r'$\ln\, N$')
+    plt.ylabel(r'$\ln \left\langle R/S \right\rangle$')
+#    plt.title('Bitcoin ') # Leave title parameters outside the plot
     plt.show()
 
          
@@ -115,7 +136,7 @@ YYMM = np.array([[data['Formatted Date'].dt.year[0],data['Formatted Date'].dt.ye
 # This code aims to add inflation in a more efficient way
 # Define more natural inflation
 nat_inflat = (1 + inflat.Value/100)**(1/12)
-# Change it to a cummulative one
+# Change it to a 'cummulative' one
 for i in range(1,inflat.Value.size):
     nat_inflat[i] = nat_inflat[i]*nat_inflat[i-1]
 
@@ -148,7 +169,11 @@ linear_inflat = linear_inflat[::-1] # Reverse order to match prices ordering
 data['Close'] = data['Close']*linear_inflat
 
 # add a 'Returns' column
-data['Returns'] = data['Close'].diff()
+#data['Returns'] = data['Close'].diff()
+
+# Using this definition of returns seem to be better due to independence of scale
+data['Returns'] = 100 * data['Close'].pct_change().dropna()
+data['Returns'][0] = 0.
 
 
 # Get array with sizes of sections in time series 
@@ -160,10 +185,11 @@ facs = factors_a(length_max,10)
 # calculate returns based on data stored 
 # generally the first element in returns will be a NaN 
 # replace NaN with 0.
-rets = np.array(data['Returns'])
-where_are_NaNs = np.isnan(rets)
-rets[where_are_NaNs] = 0.
 
+rets = np.array(data['Returns'])
+#where_are_NaNs = np.isnan(rets)
+#rets[where_are_NaNs] = 0.
+# Already managed by .dropna()
 
 """
 rets_dates = np.array(data['Formatted Date'])
@@ -222,25 +248,37 @@ lnravfit = np.polyval(plnNlnrav,lnN)
 # print values of coefficients of linear fit
 print(plnNlnrav)
 
-# plot lnrav and lnravfit 
-hurstFitPlot(lnN, lnrav, lnravfit, year) 
+
+#==============================================================================
+# # plot lnrav and lnravfit for all BTC prices, demonstrate the need for a parametrization of the Hurst exponent
+#==============================================================================
+hurstFitPlot(lnN, lnrav, lnravfit) 
+plt.title('Hurst exponent estimation for all BTC prices')
+plt.tight_layout()
+
+plt.figure()
+data['Close'].plot()
+plt.title('All prices for BTC')
+plt.ylabel('USD)
+
+
 
 #==============================================================================
 # GARCH FITTING
 #==============================================================================
-
-data['pct_change'] = data['Close'].pct_change().dropna()
-data['stdev21'] = data['pct_change'].rolling(21).std() #rolling window stdev
-data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
-data['variance'] = data['hvol21']**2
-data = data.dropna() # Remove rows with blank cells.
-#data.head()
-
-data['Returns'][79360] = 0. # Remove wierd value
-am = arch.arch_model(data['Returns'] * 100)
-#res = am.fit(update_freq=5)
-res = am.fit()
-res.params
+#
+#data['pct_change'] = data['Close'].pct_change().dropna()
+#data['stdev21'] = data['pct_change'].rolling(21).std() #rolling window stdev
+#data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
+#data['variance'] = data['hvol21']**2
+#data = data.dropna() # Remove rows with blank cells.
+##data.head()
+#
+#data['Returns'][79360] = 0. # Remove wierd value
+#am = arch.arch_model(data['Returns'] * 100)
+##res = am.fit(update_freq=5)
+#res = am.fit()
+#res.params
 
 #==============================================================================
 # I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
