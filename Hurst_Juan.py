@@ -1,12 +1,12 @@
 import csv
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy as np        # Ensure latest update of numpy is installed
 import datetime as dt
 from functools import reduce
 import matplotlib
-#pip install arch
-import arch
+import matplotlib.dates as mdates
+import arch #pip install arch
 
 #==============================================================================
 # Fancy plotting
@@ -27,7 +27,6 @@ params = {'legend.fontsize':'small',
 pylab.rcParams.update(params)
 
 plt.close('all')
-
 
 
 def openFile(year):
@@ -55,8 +54,7 @@ def openFile(year):
                 line_count += 1
             
         print("Done!")
-        
-        
+           
 #==============================================================================
 # Import all data for Bitcoin    
 #==============================================================================
@@ -84,7 +82,9 @@ def openFileAsPanda():
         
     return data, inflation
     
-# returns the factors of a number n
+#==============================================================================
+# Returns the factors of a number n
+#==============================================================================
 def factors(n):    
     # this part adds each factor to a list
     return set(reduce(list.__add__, 
@@ -100,6 +100,60 @@ def factors_a(n,a):
     # Convert to array of integers
     return factors.astype(int)
 
+#==============================================================================
+# Fit to Hurst exponent
+#==============================================================================
+def fitHurst(facs,length,rets):
+    # cumulative sum of returns
+    rets_cumsum = np.cumsum(rets)
+    # list for storing average of R/S for section sizes given (given as factors)
+    rav = []
+    # calculation of <R(fac)/S(fac)> for different section sizes fac
+    for fac in facs:
+        r = [] # stores partial R/S        
+        for k in range(np.int(length/fac)): 
+            S = np.std(rets[k*fac:(k+1)*fac])
+            R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
+            
+            # occasionally S will be stored as a very small number ~e-13 instead of zero
+            # occurs due the rets[k*fac:(k+1)*fac] elements being equal
+            # this leads to errors where R/S will be 'inf' or extremely large
+            # This if statement counters this by using a new equation to calculate standard deviation
+            if R/S == float('inf') or R/S > 1000000: # filter nans
+                S = abs(rets[k*fac])/(fac**0.5)  # correction formula
+                            
+            r.append(R/S)    
+            
+        r = np.array(r)
+        
+        # give zero, instead of NaN, commonly happens if S standard deviation is zero
+        where_are_NaNs = np.isnan(r)
+        r[where_are_NaNs] = 0.
+        print(r.shape)
+        if r.shape[0] == 0:
+            r = 2*rav[fac-1]-rav[fac-2] # In case only nans are detected
+        
+        rav.append(np.mean(r))
+        
+    
+    # Fitting
+    # log both lists
+    lnN = np.log(facs)
+    lnrav = np.log(rav)
+    
+    # fit lnN as x and lnrav as y as a linear fit
+    # in accordance with equation given in 'Statstical Properties of Financial Time Series'
+    plnNlnrav = np.polyfit(lnN,lnrav,1)
+    lnravfit = np.polyval(plnNlnrav,lnN)  
+    
+    # print values of coefficients of linear fit
+    print(plnNlnrav)
+    return lnN,lnrav,lnravfit
+
+
+#==============================================================================
+# Plots plot of fitting
+#==============================================================================
 def hurstFitPlot(lnN, lnrav, lnravfit):
     plt.close('all')
     matplotlib.rcParams.update({'font.size': 22})
@@ -122,16 +176,8 @@ data, inflat = openFileAsPanda()
 # change date so it can be plotted
 inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
 
-
-
-
-#print(inflat['Value'])
-#print(data['Formatted Date'][10])
-
-
 # Get Range for Months and Years of interest
 YYMM = np.array([[data['Formatted Date'].dt.year[0],data['Formatted Date'].dt.year[data.shape[0]-1]],[data['Formatted Date'].dt.month[0],data['Formatted Date'].dt.month[data.shape[0]-1]]])
-
 
 # This code aims to add inflation in a more efficient way
 # Define more natural inflation
@@ -158,38 +204,23 @@ if (month_loc_max.size == 0):
     month_loc_max = np.array([len(inflat.month)-1])
 
 month_loc = np.arange(month_loc_min[0],month_loc_max[0]+1)
-
     
 # Instead of for loop and month sizes finder, it assumes each month is more or less the same size:
 linear_inflat = np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(nat_inflat[np.append(month_loc[0]-1,month_loc)])),nat_inflat[np.append(month_loc[0]-1,month_loc)])
 
-
 linear_inflat = linear_inflat[::-1] # Reverse order to match prices ordering
 
-data['Close'] = data['Close']*linear_inflat
+data['Close'] = data['Close']*linear_inflat   # De-inflation of prices
 
-# add a 'Returns' column
 #data['Returns'] = data['Close'].diff()
-
-# Using this definition of returns seem to be better due to independence of scale
-data['Returns'] = 100 * data['Close'].pct_change().dropna()
-data['Returns'][0] = 0.
-
-
-# Get array with sizes of sections in time series 
-length_max = len(data.index)
-#facs = factors(length_max)
-facs = factors_a(length_max,10)    
-
-
-# calculate returns based on data stored 
-# generally the first element in returns will be a NaN 
-# replace NaN with 0.
-
-rets = np.array(data['Returns'])
-#where_are_NaNs = np.isnan(rets)
+#where_are_NaNs = np.isnan(rets) # replace NaN with 0.
 #rets[where_are_NaNs] = 0.
 # Already managed by .dropna()
+data['Returns'] = 100 * data['Close'].pct_change().dropna() # Using this definition of returns seem to be better due to independence of scale
+data['Returns'][0] = 0. #NaN value
+
+# Store returns in array
+rets = np.array(data['Returns'])
 
 """
 rets_dates = np.array(data['Formatted Date'])
@@ -200,54 +231,12 @@ for timestamp in rets_timestamp:
     dt.datetime.utcfromtimestamp(timestamp).strftime('%Y-%m'))
 """
 
+# Get array with sizes of sections in time series 
+length_max = len(data.index)
+#facs = factors(length_max)
+facs = factors_a(length_max,10)    
 
-# cumulative sum of returns
-rets_cumsum = np.cumsum(rets)
-
-# list storing average of R/S for section sizes given (given as factors)
-rav = []
-
-# calculation of <R(fac)/S(fac)> for different section sizes fac
-for fac in facs:
-    r = []
-    
-    S_3 = []
-    
-    
-    for k in range(np.int(length_max/fac)): 
-        S = np.std(rets[k*fac:(k+1)*fac])
-        R = np.max(rets_cumsum[k*fac:(k+1)*fac]) - np.min(rets_cumsum[k*fac:(k+1)*fac])
-        
-        # occasionally S will be stored as a very small number ~e-13 instead of zero
-        # occurs due the rets[k*fac:(k+1)*fac] elements being equal
-        # this leads to errors where R/S will be 'inf' or extremely large
-        # This if statement counters this by using a new equation to calculate standard deviation
-        if R/S == float('inf') or R/S > 1000000:
-            S = abs(rets[k*fac])/(fac**0.5)
-                        
-        r.append(R/S)    
-        
-    r = np.array(r)
-    
-    # give zero, instead of NaN, if S standard deviation is zero
-    where_are_NaNs = np.isnan(r)
-    r[where_are_NaNs] = 0.
-      
-    rav.append(np.mean(r))
-    
-
-# log both lists
-lnN = np.log(facs)
-lnrav = np.log(rav)
-
-# fit lnN as x and lnrav as y as a linear fit
-# in accordance with equation given in 'Statstical Properties of Financial Time Series'
-plnNlnrav = np.polyfit(lnN,lnrav,1)
-lnravfit = np.polyval(plnNlnrav,lnN)  
-
-# print values of coefficients of linear fit
-print(plnNlnrav)
-
+lnN,lnrav,lnravfit = fitHurst(facs,length_max,rets)
 
 #==============================================================================
 # # plot lnrav and lnravfit for all BTC prices, demonstrate the need for a parametrization of the Hurst exponent
@@ -256,10 +245,34 @@ hurstFitPlot(lnN, lnrav, lnravfit)
 plt.title('Hurst exponent estimation for all BTC prices')
 plt.tight_layout()
 
-plt.figure()
-data['Close'].plot()
-plt.title('All prices for BTC')
-plt.ylabel('USD)
+#plt.figure()
+#data[['Formatted Date','Close']].plot()
+#plt.title('All prices for BTC')
+#plt.ylabel('Inflation-weighted USD')
+#plt.xlabel('Time')
+
+
+#==============================================================================
+# Find parametrization for Hurst exponent
+#==============================================================================
+width = 60*24*30*6  # width of each interval to find Hurst exponent
+shared = 0.5  # how much is shared between two neighboring intervals
+jump = np.int(width*(1-shared))
+N = np.int(length_max/jump)-1
+Npoints = 10
+mlnN = np.zeros([N,Npoints])
+mlnrav = np.zeros([N,Npoints])
+mlnravfit = np.zeros([N,Npoints])
+
+for n in range(N):
+    facs = factors_a(width,Npoints)
+#    print(rets[jump*n:jump*n+width])
+#    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
+    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:] = fitHurst(facs, width, rets[jump*n:jump*n+width])
+    print(str(1+n) + '/' + str(N) +' fittings done')
+    
+
+    
 
 
 
