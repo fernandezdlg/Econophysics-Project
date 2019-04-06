@@ -216,8 +216,10 @@ data['Close'] = data['Close']*linear_inflat   # De-inflation of prices
 #where_are_NaNs = np.isnan(rets) # replace NaN with 0.
 #rets[where_are_NaNs] = 0.
 # Already managed by .dropna()
-data['Returns'] = 100 * data['Close'].pct_change().dropna() # Using this definition of returns seem to be better due to independence of scale
-data['Returns'][0] = 0. #NaN value
+data['pct_change'] = data['Close'].pct_change().dropna()
+data['pct_change'][0] = 0. #NaN value
+
+data['Returns'] = 100 * data['pct_change'] # Using this definition of returns seem to be better due to independence of scale
 
 # Store returns in array
 rets = np.array(data['Returns'])
@@ -269,6 +271,7 @@ for n in range(N):
 #    print(rets[jump*n:jump*n+width])
 #    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
     mlnN[n,:],mlnrav[n,:],mlnravfit[n,:] = fitHurst(facs, width, rets[jump*n:jump*n+width])
+     
     print(str(1+n) + '/' + str(N) +' fittings done')
     
 
@@ -279,19 +282,23 @@ for n in range(N):
 #==============================================================================
 # GARCH FITTING
 #==============================================================================
-#
-#data['pct_change'] = data['Close'].pct_change().dropna()
-#data['stdev21'] = data['pct_change'].rolling(21).std() #rolling window stdev
-#data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
-#data['variance'] = data['hvol21']**2
-#data = data.dropna() # Remove rows with blank cells.
-##data.head()
-#
+
+data['stdev21'] = data['pct_change'].rolling(21*24*60).std() #rolling window stdev
+data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
+data['variance'] = data['hvol21']**2
+data = data.dropna() # Remove rows with blank cells.
+#data.head()
+
 #data['Returns'][79360] = 0. # Remove wierd value
-#am = arch.arch_model(data['Returns'] * 100)
-##res = am.fit(update_freq=5)
-#res = am.fit()
-#res.params
+am=np.zeros(N).tolist()
+res=np.zeros(N).tolist()
+params=np.zeros(N).tolist()
+
+for n in range(N):
+    am[n] = arch.arch_model(rets[jump*n:jump*n+width] * 100)
+#    res = am.fit(update_freq=5)
+    res[n] = am[n].fit()
+    params[n] = res[n].params
 
 #==============================================================================
 # I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
