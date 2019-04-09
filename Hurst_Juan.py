@@ -148,17 +148,19 @@ def fitHurst(facs,length,rets):
     
     # print values of coefficients of linear fit
     print(plnNlnrav)
-    return lnN,lnrav,lnravfit
+    return lnN,lnrav,lnravfit,plnNlnrav[0]
 
 
 #==============================================================================
 # Plots plot of fitting
 #==============================================================================
 def hurstFitPlot(lnN, lnrav, lnravfit):
-    plt.close('all')
+    plt.figure()
     matplotlib.rcParams.update({'font.size': 22})
     plt.plot(lnN, lnravfit, 'r')
     plt.plot(lnN, lnrav, 'o')
+    rav_error = np.std(abs(lnrav-lnravfit))#/sqrt(len(lnrav))
+    plt.errorbar(lnN,lnrav,yerr=rav_error, xerr=None, fmt='none')
     plt.xlabel(r'$\ln\, N$')
     plt.ylabel(r'$\ln \left\langle R/S \right\rangle$')
 #    plt.title('Bitcoin ') # Leave title parameters outside the plot
@@ -238,7 +240,7 @@ length_max = len(data.index)
 #facs = factors(length_max)
 facs = factors_a(length_max,10)    
 
-lnN,lnrav,lnravfit = fitHurst(facs,length_max,rets)
+lnN,lnrav,lnravfit,plnNlnrav = fitHurst(facs,length_max,rets)
 
 #==============================================================================
 # # plot lnrav and lnravfit for all BTC prices, demonstrate the need for a parametrization of the Hurst exponent
@@ -257,7 +259,7 @@ plt.tight_layout()
 #==============================================================================
 # Find parametrization for Hurst exponent
 #==============================================================================
-width = 60*24*30*6  # width of each interval to find Hurst exponent
+width = 60*24*30*3  # width of each interval to find Hurst exponent
 shared = 0.5  # how much is shared between two neighboring intervals
 jump = np.int(width*(1-shared))
 N = np.int(length_max/jump)-1
@@ -265,20 +267,28 @@ Npoints = 10
 mlnN = np.zeros([N,Npoints])
 mlnrav = np.zeros([N,Npoints])
 mlnravfit = np.zeros([N,Npoints])
+mplnNlnrav = np.zeros(N)
 
 for n in range(N):
     facs = factors_a(width,Npoints)
 #    print(rets[jump*n:jump*n+width])
 #    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
-    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:] = fitHurst(facs, width, rets[jump*n:jump*n+width])
+    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
      
     print(str(1+n) + '/' + str(N) +' fittings done')
-    
+        
+#    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
+#    plt.title(n)
+#    plt.tight_layout()
+#    plt.figure()
 
     
 
 
+    
 
+
+'''
 #==============================================================================
 # GARCH FITTING
 #==============================================================================
@@ -303,6 +313,6 @@ for n in range(N):
 #==============================================================================
 # I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
 #==============================================================================
-
+'''
 
 
