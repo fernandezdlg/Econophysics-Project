@@ -7,6 +7,7 @@ from functools import reduce
 import matplotlib
 import matplotlib.dates as mdates
 import arch #pip install arch
+from statsmodels.graphics.tsaplots import plot_acf
 
 #==============================================================================
 # Fancy plotting
@@ -293,16 +294,16 @@ data['Hurst1']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mpln
 # Second returns definition
 #==============================================================================
 
-data['Returns'] = data['Close'].diff()
-rets = np.array(data['Returns'])
-where_are_NaNs = np.isnan(rets) # replace NaN with 0.
-rets[where_are_NaNs] = 0.
+data['Returns2'] = data['Close'].diff()
+rets2 = np.array(data['Returns2'])
+where_are_NaNs = np.isnan(rets2) # replace NaN with 0.
+rets2[where_are_NaNs] = 0.
 
 for n in range(N):
     facs = factors_a(width,2*Npoints+2)[Npoints:-2]
-#    print(rets[jump*n:jump*n+width])
-#    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
-    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
+#    print(rets2[jump*n:jump*n+width])
+#    a,b,c = fitHurst(facs,width,rets2[jump*n:jump*n+width])
+    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets2[jump*n:jump*n+width])
      
     print(str(1+n) + '/' + str(N) +' fittings done')
         
@@ -329,21 +330,57 @@ plt.tight_layout()
     
 
 
-'''
+
 #==============================================================================
 # GARCH FITTING
 #==============================================================================
+size = 100000
+dataGARCH = np.array(data.Close[::int(data.shape[0]/size)])
+dataGARCH = pd.DataFrame(dataGARCH,columns=['Close'])
 
-data['stdev21'] = data['pct_change'].rolling(21*24*60).std() #rolling window stdev
-data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
+retsGARCH = 100 * dataGARCH.Close.pct_change().dropna()
+
+plt.figure()
+plot_acf([x**2 for x in retsGARCH])
+plt.title(r'Autocorrelation of the square of returns')
+plt.xlim([0,100])
+plt.ylim([0,0.013])
+plt.xlabel('Time step')
+plt.tight_layout()
+#plt.savefig('AutoCorr.png', format='png', dpi=1000)
+
+# According to the plot, a sensible lag value is 1
+
+
+
+
+top=0.88,
+bottom=0.11,
+left=0.11,
+right=0.9,
+hspace=0.2,
+wspace=0.2
+
+dataGARCH['stdev21'] = dataGARCH.Close.pct_change().rolling(21).std() #rolling window stdev
+#data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
 data['variance'] = data['hvol21']**2
 data = data.dropna() # Remove rows with blank cells.
 #data.head()
+
+
 
 #data['Returns'][79360] = 0. # Remove wierd value
 am=np.zeros(N).tolist()
 res=np.zeros(N).tolist()
 params=np.zeros(N).tolist()
+
+
+
+plt.figure()
+plot_acf([x**2 for x in retsGARCH])
+plt.title(r'Autocorrelation of the square of returns')
+
+# From the autocorrelation, one finds out how much lag is needed
 
 for n in range(N):
     am[n] = arch.arch_model(rets[jump*n:jump*n+width] * 100)
@@ -354,6 +391,6 @@ for n in range(N):
 #==============================================================================
 # I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
 #==============================================================================
+
+
 '''
-
-
