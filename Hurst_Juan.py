@@ -286,10 +286,6 @@ for n in range(N):
 
 
 data['Hurst1']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
-fig=plt.figure()
-plt.plot(data.Formatted_Date,data.Hurst1, label ='Relative Returns')
-fig.autofmt_xdate()
-plt.yticks(np.arange(0.3,0.7,0.05))
 
 
 
@@ -317,11 +313,15 @@ for n in range(N):
 
 
 data['Hurst2']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
+
+fig=plt.figure()
+plt.plot(data.Formatted_Date,data.Hurst1,label ='Relative Returns')
 plt.plot(data.Formatted_Date,data.Hurst2,label='Absolute returns')
 fig.autofmt_xdate()
 plt.yticks(np.arange(0.3,0.7,0.05))
-fig.legend(loc=[0.7,0.2])
+fig.legend(loc=[0.67,0.22])
 plt.title('Hurst exponent fitting for the Returns of Bitcoin')
+#plt.savefig('Hurst.png', format='png', dpi=1000)
 
 
     
