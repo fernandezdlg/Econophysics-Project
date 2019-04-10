@@ -319,10 +319,12 @@ plt.plot(data.Formatted_Date,data.Hurst1,label ='Relative Returns')
 plt.plot(data.Formatted_Date,data.Hurst2,label='Absolute returns')
 fig.autofmt_xdate()
 plt.yticks(np.arange(0.3,0.7,0.05))
-fig.legend(loc=[0.67,0.22])
+fig.legend(loc=[0.7,0.3])
 plt.title('Hurst exponent fitting for the Returns of Bitcoin')
+plt.ylabel('H')
+plt.xlabel('Date')
+plt.tight_layout()
 #plt.savefig('Hurst.png', format='png', dpi=1000)
-
 
     
 
