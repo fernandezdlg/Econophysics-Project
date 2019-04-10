@@ -159,7 +159,7 @@ def hurstFitPlot(lnN, lnrav, lnravfit):
     matplotlib.rcParams.update({'font.size': 22})
     plt.plot(lnN, lnravfit, 'r')
     plt.plot(lnN, lnrav, 'o')
-    rav_error = np.std(abs(lnrav-lnravfit))#/sqrt(len(lnrav))
+    rav_error = 2*np.std(abs(lnrav-lnravfit))#/sqrt(len(lnrav))
     plt.errorbar(lnN,lnrav,yerr=rav_error, xerr=None, fmt='none')
     plt.xlabel(r'$\ln\, N$')
     plt.ylabel(r'$\ln \left\langle R/S \right\rangle$')
@@ -245,19 +245,24 @@ lnN,lnrav,lnravfit,plnNlnrav = fitHurst(facs,length_max,rets)
 hurstFitPlot(lnN, lnrav, lnravfit) 
 plt.title('Hurst exponent estimation for all BTC prices')
 plt.tight_layout()
+#plt.savefig('BTC.png', format='png', dpi=1000)
 
-#plt.figure()
-#data[['Formatted_Date','Close']].plot()
-#plt.title('All prices for BTC')
-#plt.ylabel('Inflation-weighted USD')
-#plt.xlabel('Time')
+
+fig = plt.figure()
+plt.plot(data.Formatted_Date,data.Close)
+fig.autofmt_xdate()
+plt.title('All prices for BTC')
+plt.ylabel('Inflation-weighted USD')
+plt.xlabel('Date')
+plt.tight_layout()
+#plt.savefig('BTCUSD.png', format='png', dpi=1000)
 
 
 #==============================================================================
 # Find parametrization for Hurst exponent
 #==============================================================================
 width = 60*24*30*6  # width of each interval to find Hurst exponent
-shared = 0.9  # how much is shared between two neighboring intervals
+shared = 0.7  # how much is shared between two neighboring intervals
 jump = np.int(width*(1-shared))
 N = np.int(length_max/jump)-1
 Npoints = 10
@@ -267,7 +272,7 @@ mlnravfit = np.zeros([N,Npoints])
 mplnNlnrav = np.zeros(N)
 
 for n in range(N):
-    facs = factors_a(width,2*Npoints)[Npoints:-2]
+    facs = factors_a(width,2*Npoints+2)[Npoints:-2]
 #    print(rets[jump*n:jump*n+width])
 #    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
     mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
@@ -275,8 +280,8 @@ for n in range(N):
     print(str(1+n) + '/' + str(N) +' fittings done')
         
     hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
-#    plt.title(n)
-#    plt.tight_layout()
+    plt.title('Section '+str(N-n+1)
+    plt.tight_layout()
 #    plt.figure()
 
 
@@ -295,7 +300,7 @@ where_are_NaNs = np.isnan(rets) # replace NaN with 0.
 rets[where_are_NaNs] = 0.
 
 for n in range(N):
-    facs = factors_a(width,2*Npoints)[Npoints:-2]
+    facs = factors_a(width,2*Npoints+2)[Npoints:-2]
 #    print(rets[jump*n:jump*n+width])
 #    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
     mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
@@ -303,8 +308,8 @@ for n in range(N):
     print(str(1+n) + '/' + str(N) +' fittings done')
         
     hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
-#    plt.title(n)
-#    plt.tight_layout()
+    plt.title('Section ' + str(N-n+1))
+    plt.tight_layout()
 #    plt.figure()
 
 
