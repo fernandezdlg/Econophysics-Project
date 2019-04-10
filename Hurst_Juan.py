@@ -7,6 +7,8 @@ from functools import reduce
 import matplotlib
 import matplotlib.dates as mdates
 import arch #pip install arch
+from arch import arch_model
+
 from statsmodels.graphics.tsaplots import plot_acf
 
 #==============================================================================
@@ -334,11 +336,77 @@ plt.tight_layout()
 #==============================================================================
 # GARCH FITTING
 #==============================================================================
+
+#data['Returns'][79360] = 0. # Remove wierd value
+am=np.zeros(N).tolist()
+res=np.zeros(N).tolist()
+params=np.zeros(N).tolist()
+
+dataGARCH = np.array(data.Close[np.arange(0,data.shape[0],60*24)])[::-1]
+dataGARCH = pd.DataFrame(dataGARCH,columns=['Close'])
+returns = 100 * dataGARCH['Close'].pct_change().dropna()
+
+plt.figure()
+plot_acf([x**2 for x in returns])
+plt.title(r'Autocorrelation of the square of returns')
+plt.xlim([0,100])
+plt.ylim([-0.1,0.25])
+plt.xlabel('Days')
+plt.tight_layout()
+#plt.savefig('AutoCorr.png', format='png', dpi=1000)
+
+
+am = arch_model(returns, lags=1)
+res = am.fit()
+print(res.summary())
+plt.figure()
+res.plot(scale=360)
+plt.xlim([0,returns.shape[0]])
+plt.xlabel('Days')
+plt.tight_layout()
+#plt.savefig('Fit.png', format='png', dpi=1000)
+
+plt.figure()
+res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='volatility', method='analytic', simulations=1000)
+plt.xlim([0,returns.shape[0]])
+plt.xlabel('Days')
+plt.tight_layout()
+#plt.savefig('Vol_prediction.png', format='png', dpi=1000)
+
+plt.figure()
+res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='mean', method='simulation', simulations=1000)
+plt.xlim([0,returns.shape[0]])
+plt.xlabel('Days')
+plt.tight_layout()
+#plt.savefig('Mean_prediction.png', format='png', dpi=1000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+#==============================================================================
+# The following is code that is not useful.
+#==============================================================================
 size = 100000
 dataGARCH = np.array(data.Close[::int(data.shape[0]/size)])
 dataGARCH = pd.DataFrame(dataGARCH,columns=['Close'])
 
 retsGARCH = 100 * dataGARCH.Close.pct_change().dropna()
+
+dataGARCH['stdev21'] = dataGARCH.Close.pct_change().rolling(21).std() #rolling window stdev
+dataGARCH['variance'] = dataGARCH.stdev21**2
+dataGARCH.dropna()
 
 plt.figure()
 plot_acf([x**2 for x in retsGARCH])
@@ -351,17 +419,31 @@ plt.tight_layout()
 
 # According to the plot, a sensible lag value is 1
 
+# split into train/test
+n_test = 10
+train, test = retsGARCH[:-n_test], retsGARCH[-n_test:]
+
+# define model
+model = arch_model(train, mean='Zero', vol='GARCH', p=1, q=1)
+# fit model
+model_fit = model.fit()
+# forecast the test set
+yhat = model_fit.forecast(horizon=n_test)
+# plot the actual variance
+var = [dataGARCH.variance]
+plt.figure()
+plt.plot(var[-n_test:])
+# plot forecast variance
+plt.plot(yhat.variance.values[-1, :])
+plt.show()
 
 
 
-top=0.88,
-bottom=0.11,
-left=0.11,
-right=0.9,
-hspace=0.2,
-wspace=0.2
 
-dataGARCH['stdev21'] = dataGARCH.Close.pct_change().rolling(21).std() #rolling window stdev
+
+
+
+
 #data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
 data['variance'] = data['hvol21']**2
 data = data.dropna() # Remove rows with blank cells.
@@ -369,28 +451,8 @@ data = data.dropna() # Remove rows with blank cells.
 
 
 
-#data['Returns'][79360] = 0. # Remove wierd value
-am=np.zeros(N).tolist()
-res=np.zeros(N).tolist()
-params=np.zeros(N).tolist()
+ 
 
-
-
-plt.figure()
-plot_acf([x**2 for x in retsGARCH])
-plt.title(r'Autocorrelation of the square of returns')
-
-# From the autocorrelation, one finds out how much lag is needed
-
-for n in range(N):
-    am[n] = arch.arch_model(rets[jump*n:jump*n+width] * 100)
-#    res = am.fit(update_freq=5)
-    res[n] = am[n].fit()
-    params[n] = res[n].params
-
-#==============================================================================
-# I think that the fitting is not working because the model parameters vary with time, shorter time intervals are needed
-#==============================================================================
 
 
 '''
