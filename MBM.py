@@ -39,16 +39,24 @@ pylab.rcParams.update(params)
 # AFTER RUNNING Hurst.py, in same console, run the following script within comments
 #==============================================================================
 size = 1024
+hurst = np.array(data.Hurst1[::-1])
 
 def H(t):
-    return data.Hurst1[t.astype(int)]   
+    t = t*(data.shape[0]-1)
+    t = int(t)
+    return hurst[t]
+
+def Hplot(t):
+    t = t*(data.shape[0]-1)
+    t = t.astype(int)
+    return hurst[t]
+
     
-m = MBM(n=size,hurst=H,length=data.shape[0]-1)
+m = MBM(n=size,hurst=H,length=1)
 
 #m0 = MBM(1024, h0)
 #m1 = MBM(1024, h1)
 #m2 = MBM(1024, h2)
-
 
 
 fig = plt.figure()
@@ -59,12 +67,12 @@ ax2 = fig.add_subplot(2,1,2)
 ax1.set_title(r'MBM for centered negative gaussian Hurst function',)
 ax1.plot(m.times(),m.mbm(),'r')
 ax2.set_title(r'Hurst function')
-ax2.plot(m.times(),H(m.times()),'r')
+ax2.plot(m.times(),Hplot(m.times()),'r')
 
 fig.show()
 fig.tight_layout()
 
-fig.savefig('MBM_simulation.png', format='png', dpi=1000)
+#fig.savefig('MBM_simulation.png', format='png', dpi=1000)
 
 
 #fig0 = plt.figure(0)
