@@ -262,7 +262,7 @@ plt.tight_layout()
 # Find parametrization for Hurst exponent
 #==============================================================================
 width = 60*24*30*6  # width of each interval to find Hurst exponent
-shared = 0.7  # how much is shared between two neighboring intervals
+shared = 0.5  # how much is shared between two neighboring intervals
 jump = np.int(width*(1-shared))
 N = np.int(length_max/jump)-1
 Npoints = 10
@@ -279,15 +279,18 @@ for n in range(N):
      
     print(str(1+n) + '/' + str(N) +' fittings done')
         
-    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
-    plt.title('Section '+str(N-n+1)
-    plt.tight_layout()
-#    plt.figure()
+#    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
+#    plt.title('Section '+str(N-n))
+#    plt.tight_layout()
+#    plt.yticks(np.arange(3,8,1))
 
 
 data['Hurst1']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
-plt.figure()
-plt.plot(data.Formatted_Date,data.Hurst1)
+fig=plt.figure()
+plt.plot(data.Formatted_Date,data.Hurst1, label ='Relative Returns')
+fig.autofmt_xdate()
+plt.yticks(np.arange(0.3,0.7,0.05))
+
 
 
 #==============================================================================
@@ -307,17 +310,18 @@ for n in range(N):
      
     print(str(1+n) + '/' + str(N) +' fittings done')
         
-    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
-    plt.title('Section ' + str(N-n+1))
-    plt.tight_layout()
-#    plt.figure()
+#    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
+#    plt.title('Section ' + str(N-n))
+#    plt.tight_layout()
+#    plt.yticks(np.arange(3,8,1))
 
 
 data['Hurst2']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
-plt.figure()
-plt.plot(data.Formatted_Date,data.Hurst2)
-
-#plt.title('Hurst exponent fitting for the Returns of Bitcoin')
+plt.plot(data.Formatted_Date,data.Hurst2,label='Absolute returns')
+fig.autofmt_xdate()
+plt.yticks(np.arange(0.3,0.7,0.05))
+fig.legend(loc=[0.7,0.2])
+plt.title('Hurst exponent fitting for the Returns of Bitcoin')
 
 
     
