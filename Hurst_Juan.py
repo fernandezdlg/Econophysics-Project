@@ -67,9 +67,9 @@ def openFileAsPanda():
             
             # To create consistency betweeen date formats
             if k == 3:
-                dfs[k]['Formatted Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in dfs[k]['Date']]
+                dfs[k]['Formatted_Date'] = [dt.datetime.strptime(date,'%d/%m/%Y %H:%M') for date in dfs[k]['Date']]
             else:
-                dfs[k]['Formatted Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in dfs[k]['Date']]
+                dfs[k]['Formatted_Date'] = [dt.datetime.strptime(date,'%Y-%m-%d %H:%M:%S') for date in dfs[k]['Date']]
             
             print(str(2018-k) + " BTC prices in USD imported.")
     
@@ -176,10 +176,10 @@ def hurstFitPlot(lnN, lnrav, lnravfit):
 data, inflat = openFileAsPanda()
 
 # change date so it can be plotted
-inflat['Formatted Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
+inflat['Formatted_Date'] = [dt.datetime.strptime(date, '%Y-%m') for date in inflat['TIME']]
 
 # Get Range for Months and Years of interest
-YYMM = np.array([[data['Formatted Date'].dt.year[0],data['Formatted Date'].dt.year[data.shape[0]-1]],[data['Formatted Date'].dt.month[0],data['Formatted Date'].dt.month[data.shape[0]-1]]])
+YYMM = np.array([[data['Formatted_Date'].dt.year[0],data['Formatted_Date'].dt.year[data.shape[0]-1]],[data['Formatted_Date'].dt.month[0],data['Formatted_Date'].dt.month[data.shape[0]-1]]])
 
 # This code aims to add inflation in a more efficient way
 # Define more natural inflation
@@ -190,8 +190,8 @@ for i in range(1,inflat.Value.size):
 
 
 # Extract Month and Year from inflation
-inflat['Formatted Date'] = pd.to_datetime(inflat['Formatted Date'])
-inflat['year'], inflat['month'] = inflat['Formatted Date'].dt.year, inflat['Formatted Date'].dt.month
+inflat['Formatted_Date'] = pd.to_datetime(inflat['Formatted_Date'])
+inflat['year'], inflat['month'] = inflat['Formatted_Date'].dt.year, inflat['Formatted_Date'].dt.month
 
 year_loc_min = np.where(inflat.year == YYMM[0,1])[0]
 year_loc_max = np.where(inflat.year == YYMM[0,0])[0]
@@ -214,9 +214,6 @@ linear_inflat = linear_inflat[::-1] # Reverse order to match prices ordering
 
 data['Close'] = data['Close']*linear_inflat   # De-inflation of prices
 
-#data['Returns'] = data['Close'].diff()
-#where_are_NaNs = np.isnan(rets) # replace NaN with 0.
-#rets[where_are_NaNs] = 0.
 # Already managed by .dropna()
 data['pct_change'] = data['Close'].pct_change().dropna()
 data['pct_change'][0] = 0. #NaN value
@@ -227,7 +224,7 @@ data['Returns'] = 100 * data['pct_change'] # Using this definition of returns se
 rets = np.array(data['Returns'])
 
 """
-rets_dates = np.array(data['Formatted Date'])
+rets_dates = np.array(data['Formatted_Date'])
 rets_timestamp = np.array(data['Unix Timestamp'])
 
 print(rets_timestamp)
@@ -250,7 +247,7 @@ plt.title('Hurst exponent estimation for all BTC prices')
 plt.tight_layout()
 
 #plt.figure()
-#data[['Formatted Date','Close']].plot()
+#data[['Formatted_Date','Close']].plot()
 #plt.title('All prices for BTC')
 #plt.ylabel('Inflation-weighted USD')
 #plt.xlabel('Time')
@@ -259,8 +256,8 @@ plt.tight_layout()
 #==============================================================================
 # Find parametrization for Hurst exponent
 #==============================================================================
-width = 60*24*30*3  # width of each interval to find Hurst exponent
-shared = 0.5  # how much is shared between two neighboring intervals
+width = 60*24*30*6  # width of each interval to find Hurst exponent
+shared = 0.9  # how much is shared between two neighboring intervals
 jump = np.int(width*(1-shared))
 N = np.int(length_max/jump)-1
 Npoints = 10
@@ -270,19 +267,52 @@ mlnravfit = np.zeros([N,Npoints])
 mplnNlnrav = np.zeros(N)
 
 for n in range(N):
-    facs = factors_a(width,Npoints)
+    facs = factors_a(width,2*Npoints)[Npoints:-2]
 #    print(rets[jump*n:jump*n+width])
 #    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
     mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
      
     print(str(1+n) + '/' + str(N) +' fittings done')
         
-#    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
+    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
 #    plt.title(n)
 #    plt.tight_layout()
 #    plt.figure()
 
-    
+
+data['Hurst1']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
+plt.figure()
+plt.plot(data.Formatted_Date,data.Hurst1)
+
+
+#==============================================================================
+# Second returns definition
+#==============================================================================
+
+data['Returns'] = data['Close'].diff()
+rets = np.array(data['Returns'])
+where_are_NaNs = np.isnan(rets) # replace NaN with 0.
+rets[where_are_NaNs] = 0.
+
+for n in range(N):
+    facs = factors_a(width,2*Npoints)[Npoints:-2]
+#    print(rets[jump*n:jump*n+width])
+#    a,b,c = fitHurst(facs,width,rets[jump*n:jump*n+width])
+    mlnN[n,:],mlnrav[n,:],mlnravfit[n,:],mplnNlnrav[n] = fitHurst(facs, width, rets[jump*n:jump*n+width])
+     
+    print(str(1+n) + '/' + str(N) +' fittings done')
+        
+    hurstFitPlot(mlnN[n,:], mlnrav[n,:], mlnravfit[n,:]) 
+#    plt.title(n)
+#    plt.tight_layout()
+#    plt.figure()
+
+
+data['Hurst2']=np.interp(np.linspace(0,1,data.shape[0]),np.linspace(0,1,len(mplnNlnrav)),mplnNlnrav)
+plt.figure()
+plt.plot(data.Formatted_Date,data.Hurst2)
+
+#plt.title('Hurst exponent fitting for the Returns of Bitcoin')
 
 
     
