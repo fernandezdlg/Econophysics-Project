@@ -248,7 +248,7 @@ lnN,lnrav,lnravfit,plnNlnrav = fitHurst(facs,length_max,rets)
 hurstFitPlot(lnN, lnrav, lnravfit) 
 plt.title('Hurst exponent estimation for all BTC prices')
 plt.tight_layout()
-#plt.savefig('BTC.png', format='png', dpi=1000)
+#plt.savefig('BTC.png', format='png', dpi=300)
 
 
 fig = plt.figure()
@@ -258,7 +258,7 @@ plt.title('All prices for BTC')
 plt.ylabel('Inflation-weighted USD')
 plt.xlabel('Date')
 plt.tight_layout()
-#plt.savefig('BTCUSD.png', format='png', dpi=1000)
+#plt.savefig('BTCUSD.png', format='png', dpi=300)
 
 
 #==============================================================================
@@ -327,7 +327,7 @@ plt.title('Hurst exponent fitting for the returns of Bitcoin')
 plt.ylabel('H')
 plt.xlabel('Date')
 plt.tight_layout()
-#plt.savefig('Hurst.png', format='png', dpi=1000)
+#plt.savefig('Hurst.png', format='png', dpi=300)
 
     
 
@@ -353,7 +353,7 @@ plt.xlim([0,100])
 plt.ylim([-0.1,0.25])
 plt.xlabel('Days')
 plt.tight_layout()
-#plt.savefig('AutoCorr.png', format='png', dpi=1000)
+#plt.savefig('AutoCorr.png', format='png', dpi=300)
 
 
 am = arch_model(returns, lags=1)
@@ -364,21 +364,21 @@ res.plot(scale=360)
 plt.xlim([0,returns.shape[0]])
 plt.xlabel('Days')
 plt.tight_layout()
-#plt.savefig('Fit.png', format='png', dpi=1000)
+#plt.savefig('Fit.png', format='png', dpi=300)
 
 plt.figure()
 res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='volatility', method='analytic', simulations=1000)
 plt.xlim([0,returns.shape[0]])
 plt.xlabel('Days')
 plt.tight_layout()
-#plt.savefig('Vol_prediction.png', format='png', dpi=1000)
+#plt.savefig('Vol_prediction.png', format='png', dpi=300)
 
 plt.figure()
 res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='mean', method='simulation', simulations=1000)
 plt.xlim([0,returns.shape[0]])
 plt.xlabel('Days')
 plt.tight_layout()
-#plt.savefig('Mean_prediction.png', format='png', dpi=1000)
+#plt.savefig('Mean_prediction.png', format='png', dpi=300)
 
 
 
