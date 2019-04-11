@@ -366,6 +366,9 @@ plt.xlabel('Days')
 plt.tight_layout()
 #plt.savefig('Fit.png', format='png', dpi=300)
 
+#==============================================================================
+# Forecasting, not that of interest
+#==============================================================================
 plt.figure()
 res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='volatility', method='analytic', simulations=1000)
 plt.xlim([0,returns.shape[0]])
@@ -374,85 +377,39 @@ plt.tight_layout()
 #plt.savefig('Vol_prediction.png', format='png', dpi=300)
 
 plt.figure()
-res.hedgehog_plot(params=None, horizon=10, step=10, start=None, type='mean', method='simulation', simulations=1000)
+res.hedgehog_plot(params=res.params, horizon=10, step=10, start=None, type='mean', method='simulation', simulations=5)
 plt.xlim([0,returns.shape[0]])
 plt.xlabel('Days')
 plt.tight_layout()
 #plt.savefig('Mean_prediction.png', format='png', dpi=300)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
 #==============================================================================
-# The following is code that is not useful.
+# GARCH simulation
 #==============================================================================
-size = 100000
-dataGARCH = np.array(data.Close[::int(data.shape[0]/size)])
-dataGARCH = pd.DataFrame(dataGARCH,columns=['Close'])
+# This seeds recreate BTC behaviour 5, 11
+np.random.seed(5)
+randnset = np.random.randn(dataGARCH.shape[0])
 
-retsGARCH = 100 * dataGARCH.Close.pct_change().dropna()
+sigma2 = np.zeros(dataGARCH.shape[0])
+epsilon = np.zeros(dataGARCH.shape[0])
 
-dataGARCH['stdev21'] = dataGARCH.Close.pct_change().rolling(21).std() #rolling window stdev
-dataGARCH['variance'] = dataGARCH.stdev21**2
-dataGARCH.dropna()
+mu = res.params.mu
+omega = res.params.omega
+alpha = res.params[2]
+beta = res.params[3]
+
+
+for t in range(dataGARCH.shape[0]):
+    sigma2[t] = omega + alpha*epsilon[t-1]**2 + beta*sigma2[t-1]
+    epsilon[t] = randnset[t]*sigma2[t]**(1/2)
 
 plt.figure()
-plot_acf([x**2 for x in retsGARCH])
-plt.title(r'Autocorrelation of the square of returns')
-plt.xlim([0,100])
-plt.ylim([0,0.013])
-plt.xlabel('Time step')
+plt.plot(epsilon.cumsum())
+plt.title('GARCH(1,1) simulation from obtained BTC parameters')
+plt.xlabel('Days')
+plt.ylabel('Cummulative returns')
 plt.tight_layout()
-#plt.savefig('AutoCorr.png', format='png', dpi=1000)
-
-# According to the plot, a sensible lag value is 1
-
-# split into train/test
-n_test = 10
-train, test = retsGARCH[:-n_test], retsGARCH[-n_test:]
-
-# define model
-model = arch_model(train, mean='Zero', vol='GARCH', p=1, q=1)
-# fit model
-model_fit = model.fit()
-# forecast the test set
-yhat = model_fit.forecast(horizon=n_test)
-# plot the actual variance
-var = [dataGARCH.variance]
-plt.figure()
-plt.plot(var[-n_test:])
-# plot forecast variance
-plt.plot(yhat.variance.values[-1, :])
-plt.show()
+#plt.savefig('GARCHsimul.png', format='png', dpi=300)
 
 
-
-
-
-
-
-
-#data['hvol21'] = data['stdev21']*((360*24*60)**0.5) # Annualized volatility
-data['variance'] = data['hvol21']**2
-data = data.dropna() # Remove rows with blank cells.
-#data.head()
-
-
-
- 
-
-
-
-'''
